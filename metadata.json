@@ -1,0 +1,8 @@
+{
+  "name": "ADMINISTRASI DIGITAL GURU SMP NEGERI 1 KALIGONDANG",
+  "description": "A comprehensive digital administration portal for teachers and class advisers at SMP Negeri 1 Kaligondang, featuring student management, attendance tracking, daily planning, and instructional journaling with advanced reporting and analytics.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
