@@ -16,7 +16,8 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { Student, Gender } from '../types';
-import { CLASSES } from '../constants';
+import { CLASSES, SCHOOL_LOGO } from '../constants';
+import * as XLSX from 'xlsx';
 
 interface StudentsPageProps {
   role: string;
@@ -87,16 +88,14 @@ const StudentsPage: React.FC<StudentsPageProps> = ({ role, classFilter }) => {
   };
 
   const downloadTemplate = () => {
-    const headers = "Kelas,Nama Siswa,Jenis Kelamin (Laki-laki/Perempuan)\n";
-    const example = "7A,Contoh Nama Siswa,Laki-laki\n7A,Contoh Nama Siswi,Perempuan";
-    const blob = new Blob([headers + example], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", "Template_Upload_Siswa_SPENSAX.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const templateData = [
+      { "Kelas": "7A", "Nama Siswa": "Contoh Nama Siswa", "Jenis Kelamin": "Laki-laki" },
+      { "Kelas": "7A", "Nama Siswa": "Contoh Nama Siswi", "Jenis Kelamin": "Perempuan" }
+    ];
+    const ws = XLSX.utils.json_to_sheet(templateData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Template");
+    XLSX.writeFile(wb, "Template_Upload_Siswa_SPENSAX.xlsx");
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,28 +104,27 @@ const StudentsPage: React.FC<StudentsPageProps> = ({ role, classFilter }) => {
 
     const reader = new FileReader();
     reader.onload = (e) => {
-      const text = e.target?.result as string;
-      const lines = text.split('\n');
-      const newStudents: Student[] = [...students];
-      let importCount = 0;
+      try {
+        const data = e.target?.result;
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(sheet);
 
-      // Skip header (i=0)
-      for (let i = 1; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
+        const newStudents: Student[] = [...students];
+        let importCount = 0;
 
-        const columns = line.split(',');
-        if (columns.length >= 3) {
-          const classId = columns[0].trim().toUpperCase();
-          const name = columns[1].trim();
-          const genderStr = columns[2].trim().toLowerCase();
-          
-          let gender = Gender.MALE;
-          if (genderStr.includes('perempuan') || genderStr === 'p' || genderStr === 'f') {
-            gender = Gender.FEMALE;
-          }
+        jsonData.forEach((row: any) => {
+          const classId = row['Kelas']?.toString().trim().toUpperCase();
+          const name = row['Nama Siswa']?.toString().trim();
+          const genderStr = row['Jenis Kelamin']?.toString().trim().toLowerCase();
 
-          if (name && CLASSES.includes(classId)) {
+          if (classId && name && CLASSES.includes(classId)) {
+            let gender = Gender.MALE;
+            if (genderStr && (genderStr.includes('perempuan') || genderStr === 'p' || genderStr === 'f')) {
+              gender = Gender.FEMALE;
+            }
+
             newStudents.push({
               id: `import-${Date.now()}-${importCount}`,
               name,
@@ -135,20 +133,23 @@ const StudentsPage: React.FC<StudentsPageProps> = ({ role, classFilter }) => {
             });
             importCount++;
           }
-        }
-      }
+        });
 
-      if (importCount > 0) {
-        saveToLocal(newStudents);
-        showNotification(`${importCount} data siswa berhasil di-import!`, 'success');
-      } else {
-        showNotification('Tidak ada data valid yang ditemukan.', 'error');
+        if (importCount > 0) {
+          saveToLocal(newStudents);
+          showNotification(`${importCount} data siswa berhasil di-import!`, 'success');
+        } else {
+          showNotification('Tidak ada data valid yang ditemukan.', 'error');
+        }
+      } catch (error) {
+        console.error("Error importing Excel:", error);
+        showNotification('Gagal membaca file Excel.', 'error');
       }
       
       // Reset input
       if (fileInputRef.current) fileInputRef.current.value = '';
     };
-    reader.readAsText(file);
+    reader.readAsArrayBuffer(file);
   };
 
   const filteredStudents = students
@@ -156,14 +157,16 @@ const StudentsPage: React.FC<StudentsPageProps> = ({ role, classFilter }) => {
     .sort((a, b) => a.name.localeCompare(b.name));
 
   const handleExport = () => {
-    const csvData = "Kelas,Nama Siswa,Jenis Kelamin\n" + 
-      filteredStudents.map(s => `${s.classId},${s.name},${s.gender}`).join("\n");
-    const blob = new Blob([csvData], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Data_Siswa_${selectedClass}.csv`;
-    a.click();
+    const exportData = filteredStudents.map(s => ({
+      "Kelas": s.classId,
+      "Nama Siswa": s.name,
+      "Jenis Kelamin": s.gender
+    }));
+    
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Data Siswa");
+    XLSX.writeFile(wb, `Data_Siswa_${selectedClass}.xlsx`);
   };
 
   return (
@@ -188,16 +191,18 @@ const StudentsPage: React.FC<StudentsPageProps> = ({ role, classFilter }) => {
       )}
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Database Siswa</h1>
-          <p className="text-slate-500 font-medium">Kelola data murid per kelas secara efisien.</p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Database Siswa</h1>
+            <p className="text-slate-500 font-medium">Kelola data murid per kelas secara efisien.</p>
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <input 
             type="file" 
             ref={fileInputRef} 
             onChange={handleFileUpload} 
-            accept=".csv" 
+            accept=".xlsx, .xls" 
             className="hidden" 
           />
           <button 
@@ -211,22 +216,22 @@ const StudentsPage: React.FC<StudentsPageProps> = ({ role, classFilter }) => {
             onClick={() => fileInputRef.current?.click()}
             className="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-slate-50 transition-all"
           >
-            <Upload size={16} className="text-blue-600" />
-            Upload CSV
+            <Upload size={16} className="text-cyan-700" />
+            Upload Excel
           </button>
           <button 
             onClick={handleExport}
             className="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-xs flex items-center gap-2 hover:bg-slate-50 transition-all"
           >
             <Download size={16} className="text-slate-600" />
-            Export Data
+            Export Excel
           </button>
           <button 
             onClick={() => {
               setCurrentStudent({ name: '', gender: Gender.MALE });
               setIsModalOpen(true);
             }}
-            className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all"
+            className="px-6 py-2.5 bg-cyan-700 text-white rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-cyan-800 shadow-lg shadow-cyan-200 transition-all"
           >
             <Plus size={18} />
             Tambah Siswa
@@ -243,7 +248,7 @@ const StudentsPage: React.FC<StudentsPageProps> = ({ role, classFilter }) => {
               placeholder="Cari nama siswa..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-2.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 text-sm font-medium"
+              className="w-full pl-12 pr-4 py-2.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-cyan-600 text-sm font-medium"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -251,7 +256,7 @@ const StudentsPage: React.FC<StudentsPageProps> = ({ role, classFilter }) => {
             <select 
               value={selectedClass}
               onChange={(e) => setSelectedClass(e.target.value)}
-              className="bg-slate-50 border-none rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              className="bg-slate-50 border-none rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-cyan-600 disabled:opacity-50"
               disabled={!!classFilter}
             >
               {CLASSES.map(c => <option key={c} value={c}>Kelas {c}</option>)}
@@ -269,58 +274,51 @@ const StudentsPage: React.FC<StudentsPageProps> = ({ role, classFilter }) => {
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-right">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
-              {filteredStudents.length > 0 ? (
-                filteredStudents.map((student, idx) => (
-                  <tr key={student.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-6 py-4 text-sm font-bold text-slate-400">{idx + 1}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${student.gender === Gender.MALE ? 'bg-blue-100 text-blue-600' : 'bg-rose-100 text-rose-600'}`}>
-                          {student.name.charAt(0)}
-                        </div>
-                        <span className="text-sm font-bold text-slate-800">{student.name}</span>
+            <tbody>
+              {filteredStudents.map((student, index) => (
+                <tr key={student.id} className="hover:bg-slate-50/50 transition-all group">
+                  <td className="px-6 py-4 text-sm font-bold text-slate-400">{index + 1}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${student.gender === Gender.MALE ? 'bg-cyan-500' : 'bg-rose-500'}`}>
+                        {student.name.charAt(0)}
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
-                        student.gender === Gender.MALE 
-                        ? 'bg-blue-50 text-blue-600' 
-                        : 'bg-rose-50 text-rose-600'
-                      }`}>
-                        {student.gender}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => {
-                            setCurrentStudent(student);
-                            setIsModalOpen(true);
-                          }}
-                          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(student.id)}
-                          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                        <ChevronRight size={16} className="text-slate-300" />
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center">
-                    <div className="flex flex-col items-center gap-2 opacity-30">
-                      <Users size={48} />
-                      <p className="font-bold">Tidak ada data siswa ditemukan.</p>
-                      <p className="text-xs">Klik 'Download Template' untuk mulai menginput data secara massal.</p>
+                      <span className="text-sm font-bold text-slate-800">{student.name}</span>
                     </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                      student.gender === Gender.MALE ? 'bg-cyan-50 text-cyan-600' : 'bg-rose-50 text-rose-600'
+                    }`}>
+                      {student.gender === Gender.MALE ? 'Laki-laki' : 'Perempuan'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => {
+                          setCurrentStudent(student);
+                          setIsModalOpen(true);
+                        }}
+                        className="p-2 text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition-all"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(student.id)}
+                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filteredStudents.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-6 py-12 text-center text-slate-400">
+                    <Users size={32} className="mx-auto mb-2 opacity-50" />
+                    <p className="text-sm font-bold">Tidak ada data siswa ditemukan.</p>
                   </td>
                 </tr>
               )}
@@ -329,52 +327,68 @@ const StudentsPage: React.FC<StudentsPageProps> = ({ role, classFilter }) => {
         </div>
       </div>
 
-      {/* Modal CRUD */}
+      {/* Modal Form */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
           <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white w-full max-w-md rounded-[2rem] shadow-2xl p-8"
           >
-            <div className="p-6 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-900">{currentStudent.id ? 'Edit Data Siswa' : 'Tambah Siswa Baru'}</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 text-2xl font-light">&times;</button>
-            </div>
-            <div className="p-8 space-y-6">
+            <h2 className="text-xl font-bold text-slate-900 mb-6">
+              {currentStudent.id ? 'Edit Data Siswa' : 'Tambah Siswa Baru'}
+            </h2>
+            
+            <div className="space-y-4 mb-8">
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Nama Lengkap</label>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Nama Lengkap</label>
                 <input 
                   type="text" 
                   value={currentStudent.name}
                   onChange={(e) => setCurrentStudent({...currentStudent, name: e.target.value})}
-                  className="w-full px-4 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 font-medium"
-                  placeholder="Contoh: Andi Pratama"
+                  className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-cyan-500"
+                  placeholder="Masukkan nama siswa..."
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Jenis Kelamin</label>
-                <div className="flex gap-4">
-                  {[Gender.MALE, Gender.FEMALE].map(g => (
-                    <button
-                      key={g}
-                      onClick={() => setCurrentStudent({...currentStudent, gender: g})}
-                      className={`flex-1 py-3 rounded-xl font-bold text-sm border-2 transition-all ${
-                        currentStudent.gender === g 
-                        ? 'border-blue-600 bg-blue-50 text-blue-600' 
-                        : 'border-slate-100 text-slate-500 hover:border-slate-200'
-                      }`}
-                    >
-                      {g}
-                    </button>
-                  ))}
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Jenis Kelamin</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button 
+                    onClick={() => setCurrentStudent({...currentStudent, gender: Gender.MALE})}
+                    className={`py-3 rounded-xl font-bold text-sm border-2 transition-all ${
+                      currentStudent.gender === Gender.MALE 
+                      ? 'bg-cyan-50 text-cyan-600 border-cyan-200' 
+                      : 'bg-slate-50 text-slate-400 border-transparent hover:bg-slate-100'
+                    }`}
+                  >
+                    Laki-laki
+                  </button>
+                  <button 
+                    onClick={() => setCurrentStudent({...currentStudent, gender: Gender.FEMALE})}
+                    className={`py-3 rounded-xl font-bold text-sm border-2 transition-all ${
+                      currentStudent.gender === Gender.FEMALE 
+                      ? 'bg-rose-50 text-rose-600 border-rose-200' 
+                      : 'bg-slate-50 text-slate-400 border-transparent hover:bg-slate-100'
+                    }`}
+                  >
+                    Perempuan
+                  </button>
                 </div>
               </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="flex-1 py-3 bg-slate-100 text-slate-500 rounded-xl font-bold hover:bg-slate-200 transition-all"
+              >
+                Batal
+              </button>
               <button 
                 onClick={handleAddEdit}
-                className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-100"
+                className="flex-1 py-3 bg-cyan-600 text-white rounded-xl font-bold hover:bg-cyan-700 shadow-lg shadow-cyan-200 transition-all"
               >
-                Simpan Data
+                Simpan
               </button>
             </div>
           </motion.div>

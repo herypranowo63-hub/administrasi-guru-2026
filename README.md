@@ -1,20 +1,91 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# SPENSA Digital School Management System
 
-# Run and deploy your AI Studio app
+A comprehensive school management application built with React, TypeScript, and Tailwind CSS.
 
-This contains everything you need to run your app locally.
+## Features
 
-View your app in AI Studio: https://ai.studio/apps/drive/1ceLPcLurGOBQSlap-1hb72AjkgKuQfbS
+- **Dashboard**: Overview of school activities.
+- **Academic Management**:
+  - **Prota & Promes**: Annual and semester program planning.
+  - **TP & ATP**: Learning objectives and flow.
+  - **Modul Ajar**: Teaching module repository.
+  - **KKTP**: Criteria for learning objective achievement.
+  - **Kaldik**: Educational calendar.
+- **Student Management**: Student data, attendance, and biodata.
+- **Teacher Tools**:
+  - **Journal**: Daily teaching journal.
+  - **Planning**: Daily lesson planning.
+  - **Schedule**: Teaching schedule management.
+- **Administration**: User management, data backup/restore.
 
-## Run Locally
+## Tech Stack
 
-**Prerequisites:**  Node.js
+- **Frontend**: React, TypeScript, Vite
+- **Styling**: Tailwind CSS, Framer Motion
+- **Icons**: Lucide React
+- **Data Handling**: XLSX (Excel import/export)
 
+## Getting Started
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### Prerequisites
+
+- Node.js (v18 or higher)
+- npm or yarn
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+## Building for Production
+
+To create a production-ready build:
+
+```bash
+npm run build
+```
+
+This will generate a `dist` folder containing the static files.
+
+## Deployment
+
+### Vercel (Recommended)
+
+1. Push your code to a GitHub repository.
+2. Log in to [Vercel](https://vercel.com) and import your repository.
+3. Vercel will automatically detect the Vite settings.
+4. Click **Deploy**.
+
+Alternatively, you can install the Vercel CLI and run `vercel deploy`.
+
+### Netlify
+
+1. Drag and drop the `dist` folder to the Netlify Drop area.
+2. Or connect your GitHub repository for continuous deployment.
+
+### GitHub Pages
+
+1. Update `vite.config.ts` with `base: '/<repo-name>/'`.
+2. Build the project: `npm run build`.
+3. Push the `dist` folder to a `gh-pages` branch.
+
+## Project Structure
+
+- `/src`: Source code
+  - `/components`: Reusable UI components
+  - `/pages`: Application pages
+  - `/utils`: Utility functions (e.g., Excel export/import)
+  - `/data`: Static data files
+  - `App.tsx`: Main application component
+  - `constants.ts`: Application constants
+  - `types.ts`: TypeScript interfaces

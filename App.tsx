@@ -15,6 +15,13 @@ import StudentsPage from './pages/StudentsPage';
 import AttendancePage from './pages/AttendancePage';
 import BiodataPage from './pages/BiodataPage';
 import SchedulePage from './pages/SchedulePage';
+import ProtaPage from './pages/ProtaPage';
+import PromesPage from './pages/PromesPage';
+import TPPage from './pages/TPPage';
+import ATPPage from './pages/ATPPage';
+import KKTPPage from './pages/KKTPPage';
+import KaldikPage from './pages/KaldikPage';
+import ModulePage from './pages/ModulePage';
 import PlanningPage from './pages/PlanningPage';
 import JournalPage from './pages/JournalPage';
 import AdminPanel from './pages/AdminPanel';
@@ -102,6 +109,13 @@ const AppContent: React.FC = () => {
               <Route path="/attendance" element={<AttendancePage role={userRole!} />} />
               <Route path="/biodata" element={<BiodataPage role={userRole!} username={username} />} />
               <Route path="/schedule" element={<SchedulePage role={userRole!} username={username} />} />
+              <Route path="/prota" element={<ProtaPage username={username} />} />
+              <Route path="/promes" element={<PromesPage username={username} />} />
+              <Route path="/tp" element={<TPPage username={username} />} />
+              <Route path="/atp" element={<ATPPage username={username} />} />
+              <Route path="/kktp" element={<KKTPPage username={username} />} />
+              <Route path="/kaldik" element={<KaldikPage />} />
+              <Route path="/modules" element={<ModulePage role={userRole!} username={username} />} />
               <Route path="/plans" element={<PlanningPage role={userRole!} username={username} />} />
               <Route path="/journals" element={<JournalPage role={userRole!} username={username} />} />
               <Route path="/admin" element={userRole === 'ADMIN' ? <AdminPanel /> : <Navigate to="/dashboard" />} />

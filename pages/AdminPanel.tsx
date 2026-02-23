@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Shield, 
@@ -16,14 +16,21 @@ import {
   List,
   ClipboardCheck,
   Search,
-  UserCheck
+  UserCheck,
+  Download,
+  Upload,
+  Database
 } from 'lucide-react';
 import { DailyPlan, ExecutionStatus, TeacherJournal } from '../types';
+import { exportMultipleSheets } from '../utils/excelUtils';
+import { SCHOOL_LOGO } from '../constants';
+import * as XLSX from 'xlsx';
 
 const AdminPanel: React.FC = () => {
   const [plans, setPlans] = useState<DailyPlan[]>([]);
   const [journals, setJournals] = useState<TeacherJournal[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
     const savedPlans = localStorage.getItem('spensa_plans');
@@ -32,6 +39,104 @@ const AdminPanel: React.FC = () => {
     if (savedPlans) setPlans(JSON.parse(savedPlans));
     if (savedJournals) setJournals(JSON.parse(savedJournals));
   }, []);
+
+  const handleBackup = () => {
+    const backupData: Record<string, any[]> = {};
+    
+    // Students
+    const students = JSON.parse(localStorage.getItem('spensa_students') || '[]');
+    if (students.length) backupData['Students'] = students;
+
+    // Attendance
+    const attendance = JSON.parse(localStorage.getItem('spensa_attendance') || '[]');
+    if (attendance.length) backupData['Attendance'] = attendance;
+
+    // Journals
+    const journals = JSON.parse(localStorage.getItem('spensa_journals') || '[]');
+    if (journals.length) backupData['Journals'] = journals;
+
+    // Plans
+    const plans = JSON.parse(localStorage.getItem('spensa_plans') || '[]');
+    if (plans.length) backupData['Plans'] = plans;
+
+    // Schedules
+    const allKeys = Object.keys(localStorage);
+    const scheduleKeys = allKeys.filter(k => k.startsWith('spensa_schedule_'));
+    const allSchedules: any[] = [];
+    scheduleKeys.forEach(key => {
+        const username = key.replace('spensa_schedule_', '');
+        const schedule = JSON.parse(localStorage.getItem(key) || '{}');
+        Object.entries(schedule).forEach(([day, periods]: [string, any]) => {
+            Object.entries(periods).forEach(([period, subject]) => {
+                allSchedules.push({
+                    Username: username,
+                    Hari: day,
+                    Jam: period,
+                    Mapel: subject
+                });
+            });
+        });
+    });
+    if (allSchedules.length) backupData['Schedules'] = allSchedules;
+
+    exportMultipleSheets(backupData, "SPENSAX_Full_Backup");
+  };
+
+  const handleRestore = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      try {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+              const data = e.target?.result;
+              const workbook = XLSX.read(data, { type: 'array' });
+              
+              if (workbook.Sheets['Students']) {
+                  const students = XLSX.utils.sheet_to_json(workbook.Sheets['Students']);
+                  localStorage.setItem('spensa_students', JSON.stringify(students));
+              }
+
+              if (workbook.Sheets['Attendance']) {
+                  const attendance = XLSX.utils.sheet_to_json(workbook.Sheets['Attendance']);
+                  localStorage.setItem('spensa_attendance', JSON.stringify(attendance));
+              }
+
+              if (workbook.Sheets['Journals']) {
+                  const journals = XLSX.utils.sheet_to_json(workbook.Sheets['Journals']);
+                  localStorage.setItem('spensa_journals', JSON.stringify(journals));
+              }
+
+              if (workbook.Sheets['Plans']) {
+                  const plans = XLSX.utils.sheet_to_json(workbook.Sheets['Plans']);
+                  localStorage.setItem('spensa_plans', JSON.stringify(plans));
+              }
+              
+              if (workbook.Sheets['Schedules']) {
+                  const schedules = XLSX.utils.sheet_to_json(workbook.Sheets['Schedules']);
+                  const scheduleMap: Record<string, any> = {};
+                  schedules.forEach((row: any) => {
+                      const user = row['Username'];
+                      if (!scheduleMap[user]) scheduleMap[user] = {};
+                      if (!scheduleMap[user][row['Hari']]) scheduleMap[user][row['Hari']] = {};
+                      scheduleMap[user][row['Hari']][row['Jam']] = row['Mapel'];
+                  });
+                  
+                  Object.entries(scheduleMap).forEach(([user, data]) => {
+                      localStorage.setItem(`spensa_schedule_${user}`, JSON.stringify(data));
+                  });
+              }
+
+              alert('Data berhasil direstore!');
+              window.location.reload();
+          };
+          reader.readAsArrayBuffer(file);
+      } catch (err) {
+          console.error(err);
+          alert('Gagal restore data.');
+      }
+      if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const stats = {
     total: plans.length,
@@ -65,18 +170,43 @@ const AdminPanel: React.FC = () => {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8 pb-24">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase flex items-center gap-3">
-            <Shield className="text-blue-600" /> Admin Control
-          </h1>
-          <p className="text-slate-500 font-medium italic">"Pusat kendali dan rekapitulasi sistem."</p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase flex items-center gap-3">
+              <Shield className="text-teal-600" /> Admin Control
+            </h1>
+            <p className="text-slate-500 font-medium italic">"Pusat kendali dan rekapitulasi sistem."</p>
+          </div>
+        </div>
+        <div className="flex gap-3">
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleRestore} 
+            accept=".xlsx, .xls" 
+            className="hidden" 
+          />
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            className="px-6 py-3 bg-white border border-slate-200 text-slate-700 rounded-2xl font-bold hover:bg-slate-50 transition-all flex items-center gap-2"
+          >
+            <Upload size={20} className="text-cyan-700" />
+            Restore Data
+          </button>
+          <button 
+            onClick={handleBackup}
+            className="px-6 py-3 bg-teal-600 text-white rounded-2xl font-bold shadow-lg shadow-teal-100 hover:bg-teal-700 transition-all flex items-center gap-2"
+          >
+            <Database size={20} />
+            Backup Full Data
+          </button>
         </div>
       </div>
 
       {/* REKAPITULASI RENCANA HARIAN */}
       <div className="bg-white rounded-[3rem] border border-slate-100 shadow-sm p-8">
          <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-teal-100 text-teal-600 rounded-2xl flex items-center justify-center">
                <PieChart size={24} />
             </div>
             <div>
@@ -86,16 +216,16 @@ const AdminPanel: React.FC = () => {
          </div>
 
          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-6 bg-blue-50 rounded-[2rem] border border-blue-100 relative overflow-hidden group">
+            <div className="p-6 bg-teal-50 rounded-[2rem] border border-teal-100 relative overflow-hidden group">
                <div className="relative z-10">
                   <div className="flex justify-between items-start mb-4">
-                     <span className="text-xs font-black text-blue-400 uppercase tracking-widest">Tepat Waktu (0)</span>
-                     <span className="px-3 py-1 bg-white rounded-full text-[10px] font-bold text-blue-600 shadow-sm">{getPercentage(stats.sesuai)}%</span>
+                     <span className="text-xs font-black text-teal-400 uppercase tracking-widest">Tepat Waktu (0)</span>
+                     <span className="px-3 py-1 bg-white rounded-full text-[10px] font-bold text-teal-600 shadow-sm">{getPercentage(stats.sesuai)}%</span>
                   </div>
-                  <h3 className="text-4xl font-black text-blue-900 mb-1">{stats.sesuai}</h3>
-                  <p className="text-xs font-bold text-blue-400">Rencana Terlaksana</p>
+                  <h3 className="text-4xl font-black text-teal-900 mb-1">{stats.sesuai}</h3>
+                  <p className="text-xs font-bold text-teal-400">Rencana Terlaksana</p>
                </div>
-               <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-blue-500/10 rounded-full group-hover:scale-110 transition-transform"></div>
+               <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-teal-500/10 rounded-full group-hover:scale-110 transition-transform"></div>
             </div>
 
             <div className="p-6 bg-emerald-50 rounded-[2rem] border border-emerald-100 relative overflow-hidden group">
@@ -142,7 +272,7 @@ const AdminPanel: React.FC = () => {
                   placeholder="Cari nama guru..." 
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2.5 bg-slate-50 border-none rounded-2xl text-sm font-bold w-full md:w-64 focus:ring-2 focus:ring-blue-500"
+                  className="pl-10 pr-4 py-2.5 bg-slate-50 border-none rounded-2xl text-sm font-bold w-full md:w-64 focus:ring-2 focus:ring-teal-500"
                />
                <Search className="absolute left-3 top-3 text-slate-400" size={16} />
             </div>
@@ -161,10 +291,10 @@ const AdminPanel: React.FC = () => {
                <tbody className="divide-y divide-slate-100">
                   {teacherList.length > 0 ? (
                     teacherList.map(([name, stat], idx) => (
-                      <tr key={idx} className="hover:bg-blue-50/30 transition-colors">
+                      <tr key={idx} className="hover:bg-teal-50/30 transition-colors">
                          <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                               <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
+                               <div className="w-8 h-8 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center font-bold text-sm">
                                   {name.charAt(0).toUpperCase()}
                                </div>
                                <span className="font-bold text-slate-800">{name}</span>
@@ -219,7 +349,7 @@ const AdminPanel: React.FC = () => {
               </div>
               <div className="flex gap-4">
                 <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-black flex-shrink-0">3</div>
-                <p className="text-sm font-bold text-slate-700">Di bagian <b>Build & Development Settings</b>, pastikan <u>Framework Preset</u> adalah: <span className="text-blue-600">VITE</span>.</p>
+                <p className="text-sm font-bold text-slate-700">Di bagian <b>Build & Development Settings</b>, pastikan <u>Framework Preset</u> adalah: <span className="text-teal-600">VITE</span>.</p>
               </div>
               <div className="flex gap-4">
                 <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-black flex-shrink-0">4</div>
@@ -241,7 +371,7 @@ const AdminPanel: React.FC = () => {
           <div className="bg-slate-900 rounded-[3rem] p-8 text-white shadow-xl relative overflow-hidden">
              <div className="relative z-10">
                 <h3 className="text-xl font-black mb-4 flex items-center gap-2">
-                  <FileCode className="text-blue-400" /> FILE WAJIB ADA
+                  <FileCode className="text-teal-400" /> FILE WAJIB ADA
                 </h3>
                 <div className="space-y-3">
                   {['index.html', 'package.json', 'vite.config.ts', 'index.tsx', 'vercel.json'].map(file => (
@@ -257,7 +387,7 @@ const AdminPanel: React.FC = () => {
 
           <button 
             onClick={() => window.open('https://vercel.com/dashboard', '_blank')}
-            className="w-full py-6 bg-blue-600 text-white rounded-[2.5rem] font-black text-xl flex items-center justify-center gap-4 hover:bg-blue-700 transition-all shadow-2xl shadow-blue-200 group"
+            className="w-full py-6 bg-teal-600 text-white rounded-[2.5rem] font-black text-xl flex items-center justify-center gap-4 hover:bg-teal-700 transition-all shadow-2xl shadow-teal-200 group"
           >
             <Settings className="group-hover:rotate-90 transition-transform" />
             KE SETTING VERCEL

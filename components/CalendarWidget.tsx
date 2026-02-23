@@ -28,10 +28,10 @@ const CalendarWidget: React.FC = () => {
     <div className="bg-white p-4 md:p-6 rounded-[2rem] border border-slate-100 shadow-sm mb-6">
        <button
         onClick={() => setShowCalendar(!showCalendar)}
-        className="w-full flex items-center justify-between text-sm font-bold text-slate-700 hover:text-blue-600 transition-colors"
+        className="w-full flex items-center justify-between text-sm font-bold text-slate-700 hover:text-teal-600 transition-colors"
       >
         <span className="flex items-center gap-2">
-          <CalendarIcon size={18} className="text-blue-600" />
+          <CalendarIcon size={18} className="text-teal-600" />
           {showCalendar ? 'Tutup Kalender' : 'Buka Kalender'}
         </span>
         {showCalendar ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -49,7 +49,7 @@ const CalendarWidget: React.FC = () => {
             <div className="flex items-center justify-between mb-4">
               <div className="text-left">
                 <h3 className="font-bold text-slate-800">{MONTHS[activeMonth]}</h3>
-                <p className="text-[10px] font-black text-blue-600 uppercase">{activeYear}</p>
+                <p className="text-[10px] font-black text-teal-600 uppercase">{activeYear}</p>
               </div>
               <div className="flex gap-1">
                 <button onClick={handlePrevMonth} className="p-1.5 hover:bg-slate-50 rounded-lg text-slate-400"><ChevronLeft size={16} /></button>
@@ -71,7 +71,7 @@ const CalendarWidget: React.FC = () => {
                 const day = i + 1;
                 const isToday = new Date().getDate() === day && new Date().getMonth() === activeMonth && new Date().getFullYear() === activeYear;
                 return (
-                  <div key={day} className={`h-8 w-8 flex items-center justify-center rounded-lg text-xs font-bold transition-all ${isToday ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}>
+                  <div key={day} className={`h-8 w-8 flex items-center justify-center rounded-lg text-xs font-bold transition-all ${isToday ? 'bg-teal-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}>
                     {day}
                   </div>
                 );

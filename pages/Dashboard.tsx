@@ -52,11 +52,11 @@ const Dashboard: React.FC<DashboardProps> = ({ username, role }) => {
   const attendanceChartData = CLASSES.slice(0, 9).map(c => ({
     name: c,
     attendance: 0,
-    color: '#3b82f6'
+    color: '#0e7490'
   }));
 
   const statCards = [
-    { label: 'Total Siswa', value: stats.totalStudents, icon: <Users size={24} />, color: 'bg-blue-500', trend: 'Data Terinput' },
+    { label: 'Total Siswa', value: stats.totalStudents, icon: <Users size={24} />, color: 'bg-cyan-600', trend: 'Data Terinput' },
     { label: 'Presensi Hari Ini', value: stats.attendanceToday, icon: <Calendar size={24} />, color: 'bg-emerald-500', trend: 'Belum Ada Data' },
     { label: 'Jurnal Selesai', value: stats.journalsToday, icon: <BookOpen size={24} />, color: 'bg-amber-500', trend: 'Total Input' },
     { label: 'Rencana Harian', value: stats.activePlans, icon: <FileCheck size={24} />, color: 'bg-purple-500', trend: 'Aktif' },
@@ -74,12 +74,12 @@ const Dashboard: React.FC<DashboardProps> = ({ username, role }) => {
           <p className="text-slate-500 font-medium">Rekapitulasi administrasi digital SMP N 1 Kaligondang.</p>
         </div>
         <div className="flex gap-2">
-          <div className="px-4 py-2 bg-blue-50 border border-blue-100 rounded-xl text-xs font-bold text-blue-700 flex items-center gap-2">
+          <div className="px-4 py-2 bg-cyan-50 border border-cyan-100 rounded-xl text-xs font-bold text-cyan-800 flex items-center gap-2">
             <Clock size={16} />
             Durasi: 40 Menit / JP
           </div>
           <div className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-2">
-            <Calendar size={16} className="text-blue-600" />
+            <Calendar size={16} className="text-cyan-700" />
             {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
           </div>
         </div>
@@ -116,7 +116,7 @@ const Dashboard: React.FC<DashboardProps> = ({ username, role }) => {
               <h3 className="text-xl font-bold text-slate-900">Analisis Kehadiran</h3>
               <p className="text-sm text-slate-500 font-medium">Progress harian per kelas (7A-7I)</p>
             </div>
-            <TrendingUp className="text-blue-600" />
+            <TrendingUp className="text-cyan-700" />
           </div>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -125,7 +125,7 @@ const Dashboard: React.FC<DashboardProps> = ({ username, role }) => {
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 600 }} dy={10} />
                 <YAxis hide domain={[0, 100]} />
                 <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                <Bar dataKey="attendance" radius={[6, 6, 6, 6]} barSize={32} fill="#3b82f6" />
+                <Bar dataKey="attendance" radius={[6, 6, 6, 6]} barSize={32} fill="#0e7490" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -150,7 +150,7 @@ const Dashboard: React.FC<DashboardProps> = ({ username, role }) => {
           </div>
           <div className="flex gap-2">
             <div className="relative">
-              <input type="text" placeholder="Cari Kelas..." className="pl-10 pr-4 py-2 bg-slate-50 border-none rounded-xl text-xs font-bold focus:ring-2 focus:ring-blue-500" />
+              <input type="text" placeholder="Cari Kelas..." className="pl-10 pr-4 py-2 bg-slate-50 border-none rounded-xl text-xs font-bold focus:ring-2 focus:ring-cyan-600" />
               <Search className="absolute left-3 top-2.5 text-slate-400" size={14} />
             </div>
           </div>
@@ -169,7 +169,7 @@ const Dashboard: React.FC<DashboardProps> = ({ username, role }) => {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {CLASSES.map(cls => (
-                <tr key={cls} className="hover:bg-blue-50/30 transition-colors">
+                <tr key={cls} className="hover:bg-cyan-50/30 transition-colors">
                   <td className="px-6 py-4 font-black text-slate-700 bg-slate-50/50 border-r border-slate-100">{cls}</td>
                   {SUBJECTS.slice(0, 6).map(sub => (
                     <td key={`${cls}-${sub}`} className="px-4 py-4 text-center border-r border-slate-100">

@@ -1,20 +1,22 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, Edit3, Trash2, Save, X, Book, Printer, FileText } from 'lucide-react';
+import { BookOpen, Edit3, Trash2, Save, X, Book, Printer, FileText, Download, Upload } from 'lucide-react';
 import { TeacherJournal } from '../types';
-import { SUBJECTS, CLASSES } from '../constants';
+import { SUBJECTS, CLASSES, SCHOOL_LOGO, PRINCIPAL_NAME, PRINCIPAL_NIP } from '../constants';
 import CalendarWidget from '../components/CalendarWidget';
+import { exportToExcel, importFromExcel } from '../utils/excelUtils';
 
 const JournalPage: React.FC<{ role: string, username: string }> = ({ role, username }) => {
   const [journals, setJournals] = useState<TeacherJournal[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Data Kepala Sekolah & Guru untuk Tanda Tangan
   const [printConfig, setPrintConfig] = useState({
-    principalName: 'Siti Nurhasanah, S.Pd., M.Pd.',
-    principalNip: '19700101 199501 2 001',
+    principalName: PRINCIPAL_NAME,
+    principalNip: PRINCIPAL_NIP,
     teacherName: username,
     teacherNip: '.........................',
     city: 'Kaligondang'
@@ -33,7 +35,22 @@ const JournalPage: React.FC<{ role: string, username: string }> = ({ role, usern
   useEffect(() => {
     const saved = localStorage.getItem('spensa_journals');
     if (saved) setJournals(JSON.parse(saved));
-  }, []);
+
+    const savedConfig = localStorage.getItem(`spensa_print_config_${username}`);
+    if (savedConfig) {
+      setPrintConfig(JSON.parse(savedConfig));
+    } else {
+      // Default init if no save found
+      setPrintConfig(prev => ({...prev, teacherName: username}));
+    }
+  }, [username]);
+
+  // Save config whenever it changes
+  useEffect(() => {
+    if (printConfig.teacherName) {
+      localStorage.setItem(`spensa_print_config_${username}`, JSON.stringify(printConfig));
+    }
+  }, [printConfig, username]);
 
   const handleSave = () => {
     // Include teacherName when saving
@@ -71,14 +88,90 @@ const JournalPage: React.FC<{ role: string, username: string }> = ({ role, usern
     window.print();
   };
 
+  const handleExport = () => {
+    const exportData = journals.map(j => ({
+      "Tanggal": j.date,
+      "Jam Ke": j.period,
+      "Kelas": j.classId,
+      "Mapel": j.subject,
+      "Absensi": j.attendance,
+      "Catatan": j.notes,
+      "Kegiatan Awal": j.activities.start,
+      "Kegiatan Inti": j.activities.core,
+      "Kegiatan Penutup": j.activities.end,
+      "Refleksi": j.activities.reflection,
+      "Tindak Lanjut": j.activities.followUp
+    }));
+    exportToExcel(exportData, "Jurnal_Mengajar_SPENSAX");
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    try {
+      const jsonData = await importFromExcel(file);
+      const newJournals = jsonData.map((row: any, idx: number) => ({
+        id: `import-${Date.now()}-${idx}`,
+        date: row['Tanggal'],
+        period: row['Jam Ke'],
+        classId: row['Kelas'],
+        subject: row['Mapel'],
+        attendance: row['Absensi'],
+        notes: row['Catatan'],
+        activities: {
+          start: row['Kegiatan Awal'] || '',
+          core: row['Kegiatan Inti'] || '',
+          end: row['Kegiatan Penutup'] || '',
+          reflection: row['Refleksi'] || '',
+          followUp: row['Tindak Lanjut'] || ''
+        },
+        teacherName: username,
+        type: (role === 'WALAS' ? 'WALAS' : 'TEACHER') as 'TEACHER' | 'WALAS' | 'BK'
+      }));
+
+      const merged = [...journals, ...newJournals];
+      setJournals(merged);
+      localStorage.setItem('spensa_journals', JSON.stringify(merged));
+      alert(`${newJournals.length} jurnal berhasil di-import!`);
+    } catch (err) {
+      console.error(err);
+      alert('Gagal import jurnal.');
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Jurnal Mengajar</h1>
-          <p className="text-slate-500 font-medium">Laporan realisasi kegiatan pembelajaran harian.</p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Jurnal Mengajar</h1>
+            <p className="text-slate-500 font-medium">Laporan realisasi kegiatan pembelajaran harian.</p>
+          </div>
         </div>
         <div className="flex gap-3">
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleImport} 
+            accept=".xlsx, .xls" 
+            className="hidden" 
+          />
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            className="px-4 py-3 bg-white border border-slate-200 text-slate-700 rounded-2xl font-bold hover:bg-slate-50 transition-all flex items-center gap-2"
+          >
+            <Upload size={20} className="text-cyan-700" />
+            Import
+          </button>
+          <button 
+            onClick={handleExport}
+            className="px-4 py-3 bg-white border border-slate-200 text-slate-700 rounded-2xl font-bold hover:bg-slate-50 transition-all flex items-center gap-2"
+          >
+            <Download size={20} className="text-slate-600" />
+            Export
+          </button>
           <button 
             onClick={() => setIsPrintModalOpen(true)}
             className="px-6 py-3 bg-white border border-slate-200 text-slate-700 rounded-2xl font-bold hover:bg-slate-50 transition-all flex items-center gap-2"
@@ -88,7 +181,7 @@ const JournalPage: React.FC<{ role: string, username: string }> = ({ role, usern
           </button>
           <button 
             onClick={() => setIsFormOpen(true)}
-            className="px-6 py-3 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all flex items-center gap-2"
+            className="px-6 py-3 bg-teal-600 text-white rounded-2xl font-bold shadow-lg shadow-teal-100 hover:bg-teal-700 transition-all flex items-center gap-2"
           >
             <BookOpen size={20} />
             Buat Jurnal Baru
@@ -117,11 +210,11 @@ const JournalPage: React.FC<{ role: string, username: string }> = ({ role, usern
                    <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tanggal & Kelas</p>
                       <p className="text-lg font-black text-slate-900">{j.date}</p>
-                      <p className="text-xs font-bold text-indigo-600 uppercase">Jam {j.period} • {j.classId}</p>
+                      <p className="text-xs font-bold text-teal-600 uppercase">Jam {j.period} • {j.classId}</p>
                    </div>
-                   <div className="bg-indigo-50 p-6 rounded-3xl">
-                      <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Absensi</p>
-                      <p className="text-xs font-bold text-indigo-900 leading-relaxed">{j.attendance || 'Tidak dicatat'}</p>
+                   <div className="bg-teal-50 p-6 rounded-3xl">
+                      <p className="text-[10px] font-bold text-teal-400 uppercase tracking-widest mb-1">Absensi</p>
+                      <p className="text-xs font-bold text-teal-900 leading-relaxed">{j.attendance || 'Tidak dicatat'}</p>
                    </div>
                 </div>
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -129,7 +222,7 @@ const JournalPage: React.FC<{ role: string, username: string }> = ({ role, usern
                       {['start', 'core', 'end'].map(key => (
                         <div key={key}>
                           <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-2">
-                             <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full"></div> 
+                             <div className="w-1.5 h-1.5 bg-teal-500 rounded-full"></div> 
                              {key === 'start' ? 'Pendahuluan' : key === 'core' ? 'Kegiatan Inti' : 'Penutup'}
                           </h4>
                           <p className="text-xs text-slate-700 leading-relaxed">{(j.activities as any)[key] || '-'}</p>
@@ -141,9 +234,9 @@ const JournalPage: React.FC<{ role: string, username: string }> = ({ role, usern
                         <h4 className="text-[10px] font-black text-emerald-600 uppercase mb-1">Refleksi</h4>
                         <p className="text-xs text-emerald-900 italic">"{j.activities.reflection || '-'}"</p>
                       </div>
-                      <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
-                        <h4 className="text-[10px] font-black text-blue-600 uppercase mb-1">Lanjut</h4>
-                        <p className="text-xs text-blue-900 italic">"{j.activities.followUp || '-'}"</p>
+                      <div className="p-4 bg-teal-50 rounded-2xl border border-teal-100">
+                        <h4 className="text-[10px] font-black text-teal-600 uppercase mb-1">Lanjut</h4>
+                        <p className="text-xs text-teal-900 italic">"{j.activities.followUp || '-'}"</p>
                       </div>
                    </div>
                 </div>
@@ -191,9 +284,9 @@ const JournalPage: React.FC<{ role: string, username: string }> = ({ role, usern
               <div className="space-y-6 mb-10">
                  {[{ l: 'Pendahuluan', k: 'start' }, { l: 'Kegiatan Inti', k: 'core' }, { l: 'Penutup', k: 'end' }, { l: 'Refleksi', k: 'reflection' }].map(area => (
                    <div key={area.k} className="space-y-2">
-                     <label className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">{area.l}</label>
+                     <label className="text-[10px] font-black text-teal-500 uppercase tracking-widest">{area.l}</label>
                      <textarea 
-                        className="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 text-xs font-medium text-slate-800 h-20 resize-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                        className="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 text-xs font-medium text-slate-800 h-20 resize-none focus:ring-2 focus:ring-teal-500 transition-all"
                         placeholder={`Tuliskan ${area.l.toLowerCase()}...`}
                         value={(currentJournal.activities as any)[area.k]}
                         onChange={e => setCurrentJournal({
@@ -207,7 +300,7 @@ const JournalPage: React.FC<{ role: string, username: string }> = ({ role, usern
 
               <div className="flex gap-4">
                  <button onClick={() => setIsFormOpen(false)} className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-bold hover:bg-slate-200 transition-all">Batal</button>
-                 <button onClick={handleSave} className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 shadow-xl transition-all flex items-center justify-center gap-2">
+                 <button onClick={handleSave} className="flex-1 py-4 bg-teal-600 text-white rounded-2xl font-bold hover:bg-teal-700 shadow-xl transition-all flex items-center justify-center gap-2">
                    <Save size={20} /> Simpan Jurnal
                  </button>
               </div>
@@ -228,14 +321,14 @@ const JournalPage: React.FC<{ role: string, username: string }> = ({ role, usern
               </div>
               <div className="flex gap-3">
                  <button onClick={() => setIsPrintModalOpen(false)} className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg font-bold text-xs hover:bg-slate-300">Tutup</button>
-                 <button onClick={handlePrint} className="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold text-xs hover:bg-blue-700 flex items-center gap-2">
+                 <button onClick={handlePrint} className="px-6 py-2 bg-teal-600 text-white rounded-lg font-bold text-xs hover:bg-teal-700 flex items-center gap-2">
                     <Printer size={16} /> Cetak Sekarang
                  </button>
               </div>
             </div>
 
             {/* Config Inputs (Hidden when Printing) */}
-            <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-4 bg-blue-50/50 border-b border-blue-100 print:hidden">
+            <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-4 bg-teal-50/50 border-b border-teal-100 print:hidden">
                <div>
                   <label className="text-[10px] font-bold text-slate-400 uppercase">Kota</label>
                   <input type="text" value={printConfig.city} onChange={e => setPrintConfig({...printConfig, city: e.target.value})} className="w-full text-xs font-bold bg-white border border-slate-200 rounded p-2" />

@@ -5,6 +5,8 @@ export const CLASSES = [
   '9A', '9B', '9C', '9D', '9E', '9F', '9G', '9H', '9I'
 ];
 
+export const GRADES = ['7', '8', '9'];
+
 export const SUBJECTS = [
   'Pendidikan Agama dan Budi Pekerti',
   'Pendidikan Pancasila',
@@ -35,3 +37,9 @@ export const DEFAULT_PASSWORD_TEACHER = 'spensax1*';
 export const DEFAULT_PASSWORD_WALAS = 'walas1*';
 export const ADMIN_USERNAME = 'admin1';
 export const ADMIN_PASSWORD = 'kurikulum111';
+
+// Ganti URL ini dengan URL gambar logo sekolah Anda atau path file lokal seperti '/logo.png'
+export const SCHOOL_LOGO = "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Lambang_Kabupaten_Purbalingga.png/1200px-Lambang_Kabupaten_Purbalingga.png";
+
+export const PRINCIPAL_NAME = "Sri Sulastri, S.Pd., M.Pd.";
+export const PRINCIPAL_NIP = "19780413 200312 2 005";

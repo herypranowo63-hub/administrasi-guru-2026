@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { User, Lock, ArrowRight, Info } from 'lucide-react';
+import { SCHOOL_LOGO } from '../constants';
 
 interface LoginPageProps {
   onLogin: (user: string, pass: string) => boolean;
@@ -21,25 +22,26 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-white flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background Decoration */}
+      <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-cyan-50 rounded-full blur-[120px] opacity-60"></div>
+      <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-50 rounded-full blur-[100px] opacity-60"></div>
+
+      <div className="w-full max-w-md relative z-10">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-600 rounded-[2rem] text-white shadow-2xl shadow-blue-200 mb-6">
-            <User size={36} />
-          </div>
           <h1 className="text-2xl font-bold text-slate-900 mb-2">Portal Administrasi</h1>
-          <p className="text-slate-500">Silakan masuk untuk mengakses data Anda</p>
+          <p className="text-slate-500 font-medium">SMP Negeri 1 Kaligondang</p>
         </motion.div>
 
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1 }}
-          className="bg-white border border-slate-100 rounded-3xl p-8 shadow-xl shadow-slate-100/50"
+          className="bg-white/80 backdrop-blur-xl border border-white/20 rounded-[2.5rem] p-8 shadow-2xl shadow-slate-200/50"
         >
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
@@ -49,7 +51,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                   type="text" 
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-600 transition-all font-medium"
+                  className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-cyan-700 transition-all font-medium"
                   placeholder="Masukkan username"
                   required
                 />
@@ -64,7 +66,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                   type="password" 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-600 transition-all font-medium"
+                  className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-cyan-700 transition-all font-medium"
                   placeholder="Masukkan password"
                   required
                 />
@@ -85,7 +87,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
             <button 
               type="submit"
-              className="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-100"
+              className="w-full bg-cyan-700 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-cyan-800 active:scale-[0.98] transition-all shadow-lg shadow-cyan-100"
             >
               Masuk Sekarang
               <ArrowRight size={20} />
@@ -95,7 +97,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           <div className="mt-8 pt-8 border-t border-slate-50 text-center">
             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed">
               Aplikasi ini dikembangkan oleh <br/>
-              <span className="text-blue-600">Tim Kurikulum SMP N 1 Kaligondang</span>
+              <span className="text-cyan-700">Tim Kurikulum SMP N 1 Kaligondang</span>
             </p>
           </div>
         </motion.div>

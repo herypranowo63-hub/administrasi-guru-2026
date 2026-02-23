@@ -2,27 +2,25 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, ShieldCheck, Zap, Globe, Cpu } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Zap, Globe } from 'lucide-react';
+import { SCHOOL_LOGO } from '../constants';
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-white overflow-hidden selection:bg-blue-100 relative">
+    <div className="min-h-screen bg-white overflow-hidden selection:bg-cyan-100 relative">
       {/* Decorative Elements */}
-      <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-50 rounded-full blur-[120px] opacity-60"></div>
-      <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-50 rounded-full blur-[100px] opacity-60"></div>
+      <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-cyan-50 rounded-full blur-[120px] opacity-60"></div>
+      <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-50 rounded-full blur-[100px] opacity-60"></div>
 
       <nav className="relative z-10 flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white">
-            <Cpu size={24} />
-          </div>
+        <div className="flex items-center gap-3">
           <span className="font-futuristic font-bold text-xl text-slate-900 tracking-tighter">SPENSAX DIGITAL</span>
         </div>
         <button 
           onClick={() => navigate('/login')}
-          className="bg-slate-900 text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:bg-blue-600 transition-all duration-300"
+          className="bg-slate-900 text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:bg-cyan-700 transition-all duration-300"
         >
           Masuk Portal
         </button>
@@ -35,12 +33,12 @@ const LandingPage: React.FC = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <span className="inline-block px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-xs font-bold uppercase tracking-widest mb-6">
+            <span className="inline-block px-4 py-1.5 bg-cyan-50 text-cyan-700 rounded-full text-xs font-bold uppercase tracking-widest mb-6">
               Official Platform 2025/2026
             </span>
             <h1 className="text-6xl md:text-7xl font-bold text-slate-900 leading-[1.1] mb-8">
               ADMINISTRASI <br/>
-              <span className="text-blue-600">DIGITAL GURU</span>
+              <span className="text-cyan-700">DIGITAL GURU</span>
             </h1>
             <p className="text-xl text-slate-600 mb-10 max-w-lg leading-relaxed">
               Platform terpadu untuk pengelolaan data siswa, presensi, dan pelaporan administrasi SMP Negeri 1 Kaligondang yang futuristik dan efisien.
@@ -48,7 +46,7 @@ const LandingPage: React.FC = () => {
             <div className="flex flex-wrap gap-4">
               <button 
                 onClick={() => navigate('/login')}
-                className="group flex items-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all shadow-xl shadow-blue-200"
+                className="group flex items-center gap-2 bg-cyan-700 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-cyan-800 hover:scale-105 active:scale-95 transition-all shadow-xl shadow-cyan-200"
               >
                 Mulai Sekarang
                 <ArrowRight className="group-hover:translate-x-1 transition-transform" />
@@ -82,7 +80,7 @@ const LandingPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <div className="absolute -bottom-10 -left-10 bg-blue-600 p-6 rounded-3xl shadow-xl rotate-3 hidden sm:block">
+              <div className="absolute -bottom-10 -left-10 bg-cyan-700 p-6 rounded-3xl shadow-xl rotate-3 hidden sm:block">
                 <div className="flex items-center gap-4 text-white">
                   <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
                     <Zap />
@@ -99,7 +97,7 @@ const LandingPage: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-32">
           {[
-            { icon: <Globe className="text-blue-600" />, title: "Akses Fleksibel", desc: "Dapat diakses dari mana saja melalui perangkat apa saja dengan sinkronisasi otomatis." },
+            { icon: <Globe className="text-cyan-700" />, title: "Akses Fleksibel", desc: "Dapat diakses dari mana saja melalui perangkat apa saja dengan sinkronisasi otomatis." },
             { icon: <Zap className="text-amber-500" />, title: "Real-time Analytics", desc: "Dapatkan analisis statistik kehadiran dan progres jurnal secara instan." },
             { icon: <ShieldCheck className="text-emerald-500" />, title: "Keamanan Data", desc: "Data terproteksi dengan enkripsi terbaru untuk menjaga kerahasiaan administrasi sekolah." },
           ].map((feature, i) => (
