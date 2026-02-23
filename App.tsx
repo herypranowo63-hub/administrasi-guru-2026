@@ -39,10 +39,15 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     const savedUser = localStorage.getItem('spensa_user');
     if (savedUser) {
-      const data = JSON.parse(savedUser);
-      setIsAuthenticated(true);
-      setUserRole(data.role);
-      setUsername(data.username);
+      try {
+        const data = JSON.parse(savedUser);
+        setIsAuthenticated(true);
+        setUserRole(data.role);
+        setUsername(data.username);
+      } catch (error) {
+        console.error("Failed to parse user data:", error);
+        localStorage.removeItem('spensa_user');
+      }
     }
   }, []);
 
